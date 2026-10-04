@@ -31,4 +31,4 @@ RUN chown -R botuser:botuser /app
 USER botuser
 
 # Comando de inicialização do bot
-CMD ["python", "src/main.py"]
+CMD ["python", "-m", "src.main"]
