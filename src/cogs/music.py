@@ -13,6 +13,14 @@ from src.music.ytdl import YTDLSource
 logger = logging.getLogger(__name__)
 
 BRAINROT_SONGS = [
+    "https://youtu.be/yqxIiwa_GYw",
+    "https://youtu.be/AJQ01sQLb28",
+    "https://youtu.be/bA7AUFMvKdI",
+    "https://youtu.be/fYZFJwwm9TU",
+    "https://youtu.be/FX0qJqsEkZQ",
+    "https://youtu.be/qrAXRSBv-co",
+    "https://youtu.be/rCbVoKQhIoo",
+    "https://youtu.be/M0Sy-1eZPns",
     "Moranguete abacatudo 67 42",
     "rap do tung tung sahur",
     "brainrot song",
@@ -444,24 +452,27 @@ class MusicCog(commands.Cog, name="Música"):
             await interaction.followup.send(f"❌ Não foi possível conectar ao canal punishing: `{exc}`")
             return
 
-        # Prepara a reprodução de brainrot com retry automático
+        # Prepara a reprodução de brainrot
+        brainrot_query = random.choice(BRAINROT_SONGS)
         player = self.get_player(guild)
         player.text_channel = interaction.channel
 
         # Para músicas anteriores e limpa a fila para tocar a punição imediatamente
         player.stop()
 
-        track, err = await extract_brainrot_with_retry(
-            requester=f"Punição ({interaction.user.display_name})",
-            loop=self.bot.loop,
-            max_attempts=5,
-        )
-
-        if track is not None:
-            track_title = track.title
-            player.enqueue([track])
-        else:
-            track_title = f"Brainrot Meme (Indisponível após 5 tentativas: {err})"
+        track_title = "Brainrot Especial"
+        try:
+            tracks = await YTDLSource.extract_tracks(
+                query=brainrot_query,
+                requester=f"Punição ({interaction.user.display_name})",
+                loop=self.bot.loop,
+            )
+            if tracks:
+                track = tracks[0]
+                track_title = track.title
+                player.enqueue([track])
+        except Exception as exc:
+            track_title = f"Brainrot Meme ({exc})"
 
         msg = format_punish_message(
             target=usuario.mention,
