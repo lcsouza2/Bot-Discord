@@ -109,6 +109,7 @@ python3 src/main.py
 | `/clear` | Remove todas as faixas pendentes da fila sem parar a atual. |
 | `/stop` | Interrompe o áudio, limpa a fila e desconecta do canal de voz. |
 | `/ping` | Mede e exibe a latência WebSocket do bot. |
+| `/escurraçar <usuario>` | Profere uma ofensa carinhosa e engraçada marcando um amigo. |
 | `/ajuda` | Mostra o guia rápido com todos os comandos disponíveis. |
 
 ---
