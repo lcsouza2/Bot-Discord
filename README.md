@@ -7,7 +7,8 @@ Bot de música modular para Discord desenvolvido em Python utilizando [`discord.
 ## 🚀 Funcionalidades
 
 - **Comandos de Barra Modernos (Slash Commands)**: Suporte completo à interface nativa do Discord.
-- **Filas e Playlists**: Suporte para enfileirar vídeos individuais ou playlists completas do YouTube/SoundCloud.
+- **Exclusividade YouTube**: Reprodução restrita a vídeos, buscas textuais e playlists do YouTube (`youtube.com` e `youtu.be`).
+- **Filas e Playlists**: Suporte para enfileirar vídeos individuais ou playlists completas do YouTube.
 - **Reprodução Não-Bloqueante**: Extração de metadados em threads assíncronas para não travar o heartbeat do bot.
 - **Modos de Loop**: Repetição da música atual (`track`), repetição da fila inteira (`queue`) ou desativado (`off`).
 - **Controle Total de Reprodução**: Pausar, retomar, pular (skip), ajustar volume e limpar fila.
@@ -97,7 +98,7 @@ python3 src/main.py
 
 | Comando | Descrição |
 | :--- | :--- |
-| `/play <query>` | Toca uma música ou adiciona uma playlist inteira à fila do servidor. |
+| `/play <query>` | Toca uma música ou adiciona uma playlist inteira do YouTube à fila do servidor. |
 | `/pause` | Pausa a reprodução da música atual. |
 | `/resume` | Retoma a reprodução pausada. |
 | `/skip` | Pula para a próxima música da lista de espera. |
