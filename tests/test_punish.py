@@ -105,3 +105,13 @@ async def test_get_or_create_punish_channel_forbidden():
     ch, err = await _get_or_create_punish_channel(guild)
     assert ch is None
     assert "gerenciar canais" in err.lower()
+
+
+def test_brainrot_songs_contains_required_tracks():
+    """Valida presença das faixas obrigatórias de brainrot."""
+    from src.cogs.music import BRAINROT_SONGS
+
+    assert "Moranguete abacatudo 67 42" in BRAINROT_SONGS
+    assert "rap do tung tung sahur" in BRAINROT_SONGS
+    assert "brainrot song" in BRAINROT_SONGS
+    assert len(BRAINROT_SONGS) >= 10

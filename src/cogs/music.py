@@ -13,6 +13,10 @@ from src.music.player import GuildMusicPlayer
 from src.music.ytdl import YTDLSource
 
 BRAINROT_SONGS = [
+    "Moranguete abacatudo 67 42",
+    "rap do tung tung sahur",
+    "brainrot song",
+    "tung tung tung sahur",
     "skibidi toilet official theme song",
     "crazy frog axel f",
     "baby shark trap remix",
