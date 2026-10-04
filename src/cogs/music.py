@@ -50,10 +50,10 @@ class MusicCog(commands.Cog, name="Música"):
 
         return voice_client
 
-    @app_commands.command(name="play", description="Toca uma música ou playlist do YouTube/SoundCloud.")
-    @app_commands.describe(query="Nome da música ou URL (vídeo ou playlist)")
+    @app_commands.command(name="play", description="Toca uma música ou playlist exclusivamente do YouTube.")
+    @app_commands.describe(query="Nome da música ou URL do YouTube (vídeo ou playlist)")
     async def play(self, interaction: discord.Interaction, query: str) -> None:
-        """Pesquisa e enfileira uma música ou playlist."""
+        """Pesquisa e enfileira uma música ou playlist do YouTube."""
         await interaction.response.defer()
 
         vc = await self._ensure_voice(interaction)
@@ -69,6 +69,12 @@ class MusicCog(commands.Cog, name="Música"):
                 requester=interaction.user.display_name,
                 loop=self.bot.loop,
             )
+        except ValueError as val_err:
+            await interaction.followup.send(
+                f"⚠️ {val_err}",
+                ephemeral=True,
+            )
+            return
         except Exception as exc:
             await interaction.followup.send(
                 f"❌ Erro ao buscar áudio: `{exc}`",

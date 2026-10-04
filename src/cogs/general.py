@@ -34,7 +34,7 @@ class GeneralCog(commands.Cog, name="Geral"):
         )
 
         music_commands = (
-            "`/play <busca_ou_link>` - Toca uma música ou playlist do YouTube/SoundCloud.\n"
+            "`/play <busca_ou_link>` - Toca uma música ou playlist do YouTube (vídeo, playlist ou busca).\n"
             "`/pause` - Pausa a faixa que está tocando.\n"
             "`/resume` - Retoma a reprodução pausada.\n"
             "`/skip` - Pula para a próxima música da fila.\n"
