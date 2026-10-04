@@ -87,9 +87,36 @@ GUILD_ID=
 pytest -v tests/
 ```
 
-### 4. Iniciar o bot:
+### 4. Iniciar o bot localmente:
 ```bash
 python3 src/main.py
+```
+
+---
+
+## 🐳 Executando via Container (Docker / Podman)
+
+Você também pode executar o bot de forma isolada dentro de um container:
+
+### Com Docker Compose / Podman Compose:
+```bash
+# Iniciar o container em segundo plano
+docker compose up -d --build
+
+# Ver logs em tempo real
+docker compose logs -f
+
+# Parar o container
+docker compose down
+```
+
+### Com Docker / Podman CLI:
+```bash
+# Construir a imagem
+docker build -t discord-music-bot .
+
+# Executar o container carregando as variáveis do .env
+docker run -d --name discord-music-bot --env-file .env discord-music-bot
 ```
 
 ---
