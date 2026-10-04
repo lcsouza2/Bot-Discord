@@ -115,3 +115,50 @@ def test_brainrot_songs_contains_required_tracks():
     assert "rap do tung tung sahur" in BRAINROT_SONGS
     assert "brainrot song" in BRAINROT_SONGS
     assert len(BRAINROT_SONGS) >= 10
+
+
+@pytest.mark.asyncio
+async def test_extract_brainrot_with_retry_succeeds_on_retry():
+    """Valida que retry recupera uma música quando a primeira falha."""
+    from unittest.mock import patch
+    from src.cogs.music import extract_brainrot_with_retry
+    from src.music.models import Track
+
+    valid_track = Track(
+        title="Moranguete abacatudo 67 42",
+        source_url="http://stream",
+        webpage_url="http://web",
+        duration=120,
+        requester="Punição",
+    )
+
+    call_count = 0
+
+    async def mock_extract(query, requester, loop=None):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise Exception("Vídeo indisponível ou removido")
+        return [valid_track]
+
+    with patch("src.cogs.music.YTDLSource.extract_tracks", side_effect=mock_extract):
+        track, err = await extract_brainrot_with_retry(requester="Punição", max_attempts=3)
+        assert track is not None
+        assert track.title == "Moranguete abacatudo 67 42"
+        assert err is None
+        assert call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_extract_brainrot_with_retry_all_fail():
+    """Valida comportamento quando todas as tentativas de extração falham."""
+    from unittest.mock import patch
+    from src.cogs.music import extract_brainrot_with_retry
+
+    with patch(
+        "src.cogs.music.YTDLSource.extract_tracks",
+        side_effect=Exception("Vídeo bloqueado por direitos"),
+    ):
+        track, err = await extract_brainrot_with_retry(requester="Punição", max_attempts=3)
+        assert track is None
+        assert "Vídeo bloqueado por direitos" in err

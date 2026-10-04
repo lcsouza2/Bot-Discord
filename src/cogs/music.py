@@ -1,16 +1,16 @@
-"""Cog de comandos musicais com suporte a filas, playlists e controles de reprodução."""
-
-from __future__ import annotations
-
+import asyncio
+import logging
 import random
 from typing import Dict, Literal, Optional, Tuple
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.music.models import LoopMode
+from src.music.models import LoopMode, Track
 from src.music.player import GuildMusicPlayer
 from src.music.ytdl import YTDLSource
+
+logger = logging.getLogger(__name__)
 
 BRAINROT_SONGS = [
     "Moranguete abacatudo 67 42",
@@ -28,6 +28,33 @@ BRAINROT_SONGS = [
     "nyan cat 10 hours",
     "coffin dance astronomia",
 ]
+
+
+async def extract_brainrot_with_retry(
+    requester: str,
+    loop: asyncio.AbstractEventLoop | None = None,
+    max_attempts: int = 5,
+) -> Tuple[Optional[Track], Optional[str]]:
+    """Tenta extrair uma faixa de brainrot com retry automático caso algum vídeo esteja indisponível."""
+    candidates = random.sample(BRAINROT_SONGS, len(BRAINROT_SONGS))
+    attempts = 0
+    last_error: Optional[str] = None
+
+    for query in candidates:
+        if attempts >= max_attempts:
+            break
+        attempts += 1
+        try:
+            logger.info("Tentativa %d/%d de extração brainrot com query: '%s'", attempts, max_attempts, query)
+            tracks = await YTDLSource.extract_tracks(query=query, requester=requester, loop=loop)
+            if tracks and tracks[0].source_url:
+                logger.info("Sucesso na extração de brainrot: '%s'", tracks[0].title)
+                return tracks[0], None
+        except Exception as exc:
+            logger.warning("Falha na tentativa %d com '%s': %s. Tentando próxima...", attempts, query, exc)
+            last_error = str(exc)
+
+    return None, last_error or "Nenhum vídeo de brainrot disponível no momento."
 
 
 async def _get_or_create_punish_channel(guild: discord.Guild) -> Tuple[Optional[discord.VoiceChannel], Optional[str]]:
@@ -417,27 +444,24 @@ class MusicCog(commands.Cog, name="Música"):
             await interaction.followup.send(f"❌ Não foi possível conectar ao canal punishing: `{exc}`")
             return
 
-        # Prepara a reprodução de brainrot
-        brainrot_query = random.choice(BRAINROT_SONGS)
+        # Prepara a reprodução de brainrot com retry automático
         player = self.get_player(guild)
         player.text_channel = interaction.channel
 
         # Para músicas anteriores e limpa a fila para tocar a punição imediatamente
         player.stop()
 
-        track_title = "Brainrot Especial"
-        try:
-            tracks = await YTDLSource.extract_tracks(
-                query=brainrot_query,
-                requester=f"Punição ({interaction.user.display_name})",
-                loop=self.bot.loop,
-            )
-            if tracks:
-                track = tracks[0]
-                track_title = track.title
-                player.enqueue([track])
-        except Exception as exc:
-            track_title = f"Brainrot Meme ({exc})"
+        track, err = await extract_brainrot_with_retry(
+            requester=f"Punição ({interaction.user.display_name})",
+            loop=self.bot.loop,
+            max_attempts=5,
+        )
+
+        if track is not None:
+            track_title = track.title
+            player.enqueue([track])
+        else:
+            track_title = f"Brainrot Meme (Indisponível após 5 tentativas: {err})"
 
         msg = format_punish_message(
             target=usuario.mention,
