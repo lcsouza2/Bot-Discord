@@ -208,6 +208,7 @@ class GeneralCog(commands.Cog, name="Geral"):
             "`/ping` - Mostra a latência do bot.\n"
             "`/escurraçar <usuario>` - Profere ofensas carinhosas a um amigo.\n"
             "`/bully <usuario>` - Muta o usuário na call e chama de bunda mole e chorão.\n"
+            "`/punish <usuario>` - Move o usuário para o canal punishing e toca brainrot.\n"
             "`/ajuda` - Exibe esta mensagem de ajuda."
         )
 
