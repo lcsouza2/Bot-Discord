@@ -54,6 +54,7 @@ Bot de música modular para Discord desenvolvido em Python utilizando [`discord.
    - ✅ `Embed Links`
    - ✅ `Connect`
    - ✅ `Speak`
+   - ✅ `Mute Members` (necessário para o comando `/bully` mutar membros na call)
    - ✅ `Use Application Commands`
 4. Copie a URL gerada no final da página e abra-a no navegador para adicionar o bot ao seu servidor do Discord.
 
@@ -130,6 +131,7 @@ docker stop discord-music-bot
 | `/stop` | Interrompe o áudio, limpa a fila e desconecta do canal de voz. |
 | `/ping` | Mede e exibe a latência WebSocket do bot. |
 | `/escurraçar <usuario>` | Profere uma ofensa carinhosa e engraçada marcando um amigo. |
+| `/bully <usuario>` | Muta o usuário na call por 15 segundos e chama de bunda mole, chorão e afins. |
 | `/ajuda` | Mostra o guia rápido com todos os comandos disponíveis. |
 
 ---
