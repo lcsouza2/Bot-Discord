@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Dict, Literal, Optional
+import random
+from typing import Dict, Literal, Optional, Tuple
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -10,6 +11,76 @@ from discord.ext import commands
 from src.music.models import LoopMode
 from src.music.player import GuildMusicPlayer
 from src.music.ytdl import YTDLSource
+
+BRAINROT_SONGS = [
+    "skibidi toilet official theme song",
+    "crazy frog axel f",
+    "baby shark trap remix",
+    "gummy bear song long english version",
+    "chacarron macarron",
+    "smurf cat we live we love we lie",
+    "subway surfers theme song",
+    "oi oi oi baka brainrot meme",
+    "nyan cat 10 hours",
+    "coffin dance astronomia",
+]
+
+
+async def _get_or_create_punish_channel(guild: discord.Guild) -> Tuple[Optional[discord.VoiceChannel], Optional[str]]:
+    """Busca ou cria o canal de voz 'punishing' no servidor."""
+    for ch in guild.voice_channels:
+        if ch.name.lower() == "punishing":
+            return ch, None
+
+    try:
+        new_ch = await guild.create_voice_channel("punishing", reason="Canal criado para o comando /punish")
+        return new_ch, None
+    except discord.Forbidden:
+        return None, "Não tenho permissão de 'Gerenciar Canais' para criar o canal 'punishing'."
+    except Exception as exc:
+        return None, f"Erro ao criar o canal 'punishing': {exc}"
+
+
+def format_punish_message(
+    target: str,
+    author: str,
+    is_self: bool = False,
+    is_bot: bool = False,
+    moved: bool = False,
+    in_call: bool = False,
+    error_move: Optional[str] = None,
+    track_title: Optional[str] = None,
+) -> str:
+    """Gera a mensagem descritiva do comando /punish."""
+    if is_bot:
+        return f"Tentando punir o bot, {author}? Você que vai ser mandado pro limbo, seu comédia!"
+
+    title_info = f"`{track_title}`" if track_title else "Brainrot Especial"
+
+    if is_self:
+        base = f"{author} se condenou voluntariamente ao canal **punishing**! Aguente o brainrot!"
+        return f"{base}\n\n🧠 **Brainrot tocando agora:** {title_info}"
+
+    if moved:
+        return (
+            f"🚨 **PUNIÇÃO APLICADA!**\n"
+            f"{target} foi arrastado para o canal **punishing** por ordem de {author}!\n\n"
+            f"🧠 **Brainrot tocando agora:** {title_info}\n"
+            "Boa sorte para sobreviver a essa lavagem cerebral!"
+        )
+
+    if in_call and error_move:
+        return (
+            f"🚨 **PUNIÇÃO PARCIAL!**\n"
+            f"{target} era pra ter ido pro canal **punishing**, mas não tenho permissão de 'Mover Membros' no servidor!\n\n"
+            f"🧠 Mesmo assim, entrei no canal punishing e liguei {title_info} para quando você tiver coragem de ir lá!"
+        )
+
+    return (
+        f"🚨 **CONDENADO AUSENTE!**\n"
+        f"{target} nem em canal de voz está para ser arrastado pro canal **punishing**, "
+        f"mas a armadilha está armada com {title_info} esperando por ele!"
+    )
 
 
 class MusicCog(commands.Cog, name="Música"):
@@ -295,6 +366,93 @@ class MusicCog(commands.Cog, name="Música"):
             await vc.disconnect()
 
         await interaction.response.send_message("⏹️ Reprodução encerrada e fila limpa.")
+
+    @app_commands.command(name="punish", description="Move o usuário para o canal punishing e toca brainrot no talo.")
+    @app_commands.describe(usuario="O usuário que você deseja punir no canal punishing")
+    async def punish(self, interaction: discord.Interaction, usuario: discord.Member) -> None:
+        """Condena o usuário ao canal punishing com música brainrot."""
+        await interaction.response.defer()
+
+        guild = interaction.guild
+        if guild is None:
+            return
+
+        bot_user = self.bot.user
+        if bot_user and usuario.id == bot_user.id:
+            await interaction.followup.send(
+                format_punish_message(usuario.mention, interaction.user.mention, is_bot=True)
+            )
+            return
+
+        punish_channel, err = await _get_or_create_punish_channel(guild)
+        if punish_channel is None:
+            await interaction.followup.send(f"❌ Não foi possível preparar o canal punishing: `{err}`")
+            return
+
+        in_call = bool(usuario.voice and usuario.voice.channel)
+        moved = False
+        error_move = None
+
+        if in_call:
+            try:
+                await usuario.move_to(punish_channel, reason=f"Punido por {interaction.user.display_name}")
+                moved = True
+            except discord.Forbidden:
+                error_move = "Permissão 'Mover Membros' negada."
+            except Exception as exc:
+                error_move = str(exc)
+
+        # Conecta ou move o bot para o canal punishing
+        voice_client: Optional[discord.VoiceClient] = guild.voice_client  # type: ignore[assignment]
+        try:
+            if voice_client is None:
+                voice_client = await punish_channel.connect()
+            elif voice_client.channel != punish_channel:
+                await voice_client.move_to(punish_channel)
+        except Exception as exc:
+            await interaction.followup.send(f"❌ Não foi possível conectar ao canal punishing: `{exc}`")
+            return
+
+        # Prepara a reprodução de brainrot
+        brainrot_query = random.choice(BRAINROT_SONGS)
+        player = self.get_player(guild)
+        player.text_channel = interaction.channel
+
+        # Para músicas anteriores e limpa a fila para tocar a punição imediatamente
+        player.stop()
+
+        track_title = "Brainrot Especial"
+        try:
+            tracks = await YTDLSource.extract_tracks(
+                query=brainrot_query,
+                requester=f"Punição ({interaction.user.display_name})",
+                loop=self.bot.loop,
+            )
+            if tracks:
+                track = tracks[0]
+                track_title = track.title
+                player.enqueue([track])
+        except Exception as exc:
+            track_title = f"Brainrot Meme ({exc})"
+
+        msg = format_punish_message(
+            target=usuario.mention,
+            author=interaction.user.mention,
+            is_self=usuario.id == interaction.user.id,
+            is_bot=False,
+            moved=moved,
+            in_call=in_call,
+            error_move=error_move,
+            track_title=track_title,
+        )
+
+        embed = discord.Embed(
+            title="☣️ Protocolo de Punição Ativado!",
+            description=msg,
+            color=discord.Color.dark_red(),
+        )
+        embed.set_footer(text=f"Punição decretada por {interaction.user.display_name} • Canal: #{punish_channel.name}")
+        await interaction.followup.send(embed=embed)
 
 
 async def setup(bot: commands.Bot) -> None:
