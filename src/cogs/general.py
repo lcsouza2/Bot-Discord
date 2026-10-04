@@ -7,6 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 
 
+import asyncio
 import random
 
 CARINHOSAS_OFENSAS = [
@@ -23,6 +24,54 @@ CARINHOSAS_OFENSAS = [
     "{target}, você tem a sutileza de um rinoceronte jogando xadrez, sua aberração adorável!",
     "{target}, às vezes eu acho que você pensa, mas aí você fala e me prova o contrário, seu pedaço de mau caminho!",
 ]
+
+BULLY_PHRASES_MUTED = [
+    "Cala a boca, {target}! Ninguém aguenta mais esse papo de bunda mole na call!",
+    "Silêncio no tribunal, {target}! Mute pedagógico aplicado pra gente ter um minuto de paz, seu chorão!",
+    "Mutado com sucesso, {target}! Vai chorar na cama que é lugar quente, seu bunda mole!",
+    "Já deu desse choro na call, {target}! Fica pianinho aí no mudo pra deixar de ser bunda mole!",
+    "Mute disciplinar ativado em {target}! Para de choramingar no ouvido da galera, seu chorão!",
+]
+
+BULLY_PHRASES_NOT_IN_CALL = [
+    "Nem na call {target} tá! Fugiu pra não levar mute, seu bunda mole covarde!",
+    "Cadê a coragem de entrar na call, {target}? Fugiu do mute porque é um baita chorão!",
+    "Tentou se esconder fora da call, né {target}? Mas continua sendo um bunda mole e chorão!",
+    "Esse {target} nem pisa na call de tanto medo! Choro garantido, seu bunda mole!",
+]
+
+
+def format_bully_message(
+    target: str,
+    author: str,
+    in_call: bool,
+    is_self: bool = False,
+    is_bot: bool = False,
+    mute_success: bool = False,
+    mute_forbidden: bool = False,
+) -> str:
+    """Gera a mensagem do comando bully com base no estado e contexto."""
+    if is_bot:
+        return (
+            f"Tentando dar bully em mim, {author}? Sai daqui seu bunda mole, "
+            "antes que eu mute você do servidor inteiro, seu chorão!"
+        )
+
+    if is_self:
+        return f"Dando bully em si mesmo, {author}? Além de bunda mole virou masoquista, seu chorão!"
+
+    if in_call:
+        phrase = random.choice(BULLY_PHRASES_MUTED).format(target=target)
+        if mute_success:
+            return f"{phrase}\n\n🔇 *Mutado na call por 15 segundos!*"
+        if mute_forbidden:
+            return (
+                f"{phrase}\n\n⚠️ *(Tentei te mutar na call, mas não tenho permissão de "
+                "'Mutar Membros' no servidor, então você deu sorte, seu bunda mole!)*"
+            )
+        return phrase
+
+    return random.choice(BULLY_PHRASES_NOT_IN_CALL).format(target=target)
 
 
 def format_carinhosa_roast(target: str, author: str, is_self: bool = False, is_bot: bool = False) -> str:
@@ -82,6 +131,57 @@ class GeneralCog(commands.Cog, name="Geral"):
 
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="bully", description="Muta o usuário na call e chama de bunda mole, chorão e afins.")
+    @app_commands.describe(usuario="O usuário que você deseja zoar e mutar na call")
+    async def bully(self, interaction: discord.Interaction, usuario: discord.Member) -> None:
+        """Aplica o comando bully com tentativa de mute em call e zombarias bem-humoradas."""
+        bot_user = self.bot.user
+        is_bot = bot_user is not None and usuario.id == bot_user.id
+        is_self = usuario.id == interaction.user.id
+
+        in_call = bool(usuario.voice and usuario.voice.channel)
+        mute_success = False
+        mute_forbidden = False
+
+        if in_call and not is_bot and not is_self:
+            try:
+                await usuario.edit(mute=True, reason=f"Bully aplicado por {interaction.user.display_name}")
+                mute_success = True
+
+                # Desmuta automaticamente após 15 segundos
+                async def _unmute_later(member: discord.Member) -> None:
+                    await asyncio.sleep(15)
+                    try:
+                        if member.voice:
+                            await member.edit(mute=False, reason="Fim do castigo do bully")
+                    except Exception:
+                        pass
+
+                asyncio.create_task(_unmute_later(usuario))
+            except discord.Forbidden:
+                mute_forbidden = True
+            except discord.HTTPException:
+                pass
+
+        message = format_bully_message(
+            target=usuario.mention,
+            author=interaction.user.mention,
+            in_call=in_call,
+            is_self=is_self,
+            is_bot=is_bot,
+            mute_success=mute_success,
+            mute_forbidden=mute_forbidden,
+        )
+
+        embed = discord.Embed(
+            title="🤡 Bully Aplicado!",
+            description=message,
+            color=discord.Color.red(),
+        )
+        embed.set_footer(text=f"Encomendado por {interaction.user.display_name} • Modo zoeira ativado")
+
+        await interaction.response.send_message(embed=embed)
+
     @app_commands.command(name="ajuda", description="Lista todos os comandos disponíveis no bot.")
     async def ajuda(self, interaction: discord.Interaction) -> None:
         """Exibe o guia completo de comandos."""
@@ -107,6 +207,7 @@ class GeneralCog(commands.Cog, name="Geral"):
         general_commands = (
             "`/ping` - Mostra a latência do bot.\n"
             "`/escurraçar <usuario>` - Profere ofensas carinhosas a um amigo.\n"
+            "`/bully <usuario>` - Muta o usuário na call e chama de bunda mole e chorão.\n"
             "`/ajuda` - Exibe esta mensagem de ajuda."
         )
 
