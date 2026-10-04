@@ -96,27 +96,20 @@ python3 src/main.py
 
 ## 🐳 Executando via Container (Docker / Podman)
 
-Você também pode executar o bot de forma isolada dentro de um container:
+Você pode executar o bot de forma isolada e sem instalar dependências no host:
 
-### Com Docker Compose / Podman Compose:
 ```bash
-# Iniciar o container em segundo plano
-docker compose up -d --build
-
-# Ver logs em tempo real
-docker compose logs -f
-
-# Parar o container
-docker compose down
-```
-
-### Com Docker / Podman CLI:
-```bash
-# Construir a imagem
+# 1. Construir a imagem simples
 docker build -t discord-music-bot .
 
-# Executar o container carregando as variáveis do .env
-docker run -d --name discord-music-bot --env-file .env discord-music-bot
+# 2. Executar o container com as variáveis do seu .env
+docker run -d --name discord-music-bot --restart unless-stopped --env-file .env discord-music-bot
+
+# Para acompanhar os logs:
+docker logs -f discord-music-bot
+
+# Para parar o bot:
+docker stop discord-music-bot
 ```
 
 ---
